@@ -8,9 +8,10 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from src.models.logistic_regression import LogisticRegression
+from src.models.knn import KNearestNeighbors
 from src.evaluation.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-def evaluate_dataset(filepath, weights_path, name="Dataset"):
+def evaluate_models(filepath, lr_weights_path, knn_path, name="Dataset"):
     if not os.path.exists(filepath):
         print(f"Error: File not found at {filepath}")
         return
@@ -24,37 +25,50 @@ def evaluate_dataset(filepath, weights_path, name="Dataset"):
     X = df.drop(columns=["Churn"])
     y = df["Churn"]
     
-    # Load trained model
-    model = LogisticRegression()
-    model.load_model(weights_path)
+    # Load Logistic Regression
+    lr = LogisticRegression()
+    lr.load_model(lr_weights_path)
+    lr_pred = lr.predict(X)
     
-    # Predict
-    y_pred = model.predict(X)
+    lr_acc = accuracy_score(y, lr_pred)
+    lr_prec = precision_score(y, lr_pred)
+    lr_rec = recall_score(y, lr_pred)
+    lr_f1 = f1_score(y, lr_pred)
     
-    # Compute metrics
-    acc = accuracy_score(y, y_pred)
-    prec = precision_score(y, y_pred)
-    rec = recall_score(y, y_pred)
-    f1 = f1_score(y, y_pred)
+    # Load KNN
+    knn = KNearestNeighbors()
+    knn.load_model(knn_path)
+    knn_pred = knn.predict(X)
     
-    print(f"\n==========================================")
-    print(f"Evaluation Results for: {name}")
-    print(f"File Path: {filepath}")
-    print(f"==========================================")
-    print(f"Accuracy:  {acc:.4f}")
-    print(f"Precision: {prec:.4f}")
-    print(f"Recall:    {rec:.4f}")
-    print(f"F1-Score:  {f1:.4f}")
-    print(f"==========================================\n")
-    return acc, prec, rec, f1
+    knn_acc = accuracy_score(y, knn_pred)
+    knn_prec = precision_score(y, knn_pred)
+    knn_rec = recall_score(y, knn_pred)
+    knn_f1 = f1_score(y, knn_pred)
+    
+    print(f"\n=======================================================")
+    print(f" Comparison Results for: {name}")
+    print(f" File Path: {filepath}")
+    print(f"=======================================================")
+    print(f" Metric          | Logistic Regression | KNN (k={knn.k})")
+    print(f" ----------------|---------------------|----------------")
+    print(f" Accuracy        | {lr_acc:.4f}              | {knn_acc:.4f}")
+    print(f" Precision       | {lr_prec:.4f}              | {knn_prec:.4f}")
+    print(f" Recall          | {lr_rec:.4f}              | {knn_rec:.4f}")
+    print(f" F1-Score        | {lr_f1:.4f}              | {knn_f1:.4f}")
+    print(f"=======================================================\n")
+    return {
+        "lr": (lr_acc, lr_prec, lr_rec, lr_f1),
+        "knn": (knn_acc, knn_prec, knn_rec, knn_f1)
+    }
 
 def main():
     processed_dir = os.path.join(project_root, "data", "processed")
-    weights_path = os.path.join(project_root, "src", "models", "logistic_regression_weights.npy")
+    lr_weights_path = os.path.join(project_root, "src", "models", "logistic_regression_weights.npy")
+    knn_path = os.path.join(project_root, "src", "models", "knn_model.npz")
     
-    if not os.path.exists(weights_path):
-        print(f"Error: Trained model weights not found at {weights_path}.")
-        print("Please train the model first by running: python src/train.py")
+    if not os.path.exists(lr_weights_path) or not os.path.exists(knn_path):
+        print("Error: Trained model files not found.")
+        print("Please train the models first by running: python src/train.py")
         return
         
     # Standard datasets
@@ -67,9 +81,10 @@ def main():
     # Run evaluation on all available files
     for name, path in datasets.items():
         if os.path.exists(path):
-            evaluate_dataset(path, weights_path, name)
+            evaluate_models(path, lr_weights_path, knn_path, name)
         else:
             print(f"Skipping {name}: file not found at {path}")
+
 
 if __name__ == "__main__":
     main()
