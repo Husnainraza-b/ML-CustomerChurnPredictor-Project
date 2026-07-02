@@ -1,0 +1,15 @@
+# Datasets
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Python virtual environments
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Node modules for the web app
+app/frontend/node_modules/
+app/backend/node_modules/
